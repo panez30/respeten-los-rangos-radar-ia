@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Contacto potencial calificado desde el cuestionario de Respeten los Rangos.",
+      "type": "object",
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Nombre completo del visitante."
+        },
+        "whatsapp": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 30,
+          "description": "Número de WhatsApp con prefijo de país."
+        },
+        "respuestas": {
+          "type": "object",
+          "description": "Respuestas del cuestionario de calificación."
+        },
+        "comentario": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Comentario opcional con modelo, color o talla."
+        },
+        "score": {
+          "type": "integer",
+          "description": "Puntuación de calificación de 0 a 100."
+        },
+        "categoria": {
+          "type": "string",
+          "enum": ["caliente", "tibio", "frio", "descalificado"],
+          "description": "Categoría resultante de la calificación."
+        },
+        "motivo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 220,
+          "description": "Justificación de la puntuación."
+        },
+        "resumen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 280,
+          "description": "Resumen breve para el vendedor."
+        },
+        "mensajeParaLead": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 380,
+          "description": "Mensaje inicial sugerido para WhatsApp."
+        },
+        "siguientePaso": {
+          "type": "string",
+          "enum": ["llamar_hoy", "escribir_whatsapp", "enviar_informacion", "no_contactar"],
+          "description": "Acción recomendada para el equipo."
+        },
+        "calificadoPorIA": {
+          "type": "boolean",
+          "description": "Indica si fue calificado por Gemini Flash."
+        },
+        "estado": {
+          "type": "string",
+          "enum": ["nuevo", "contactado", "cita", "ganado", "perdido"],
+          "description": "Estado comercial del contacto."
+        },
+        "consentimiento": {
+          "type": "object",
+          "description": "Registro de consentimiento (aceptado y fecha)."
+        },
+        "creadoEn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Marca de tiempo del servidor al crear el registro."
+        },
+        "primerContactoEn": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Marca de tiempo del primer contacto del equipo."
+        },
+        "llegoACita": {
+          "type": "boolean",
+          "description": "Indica si el contacto alcanzó el estado de cita o ganado."
+        }
+      },
+      "required": [
+        "nombre",
+        "whatsapp",
+        "respuestas",
+        "comentario",
+        "score",
+        "categoria",
+        "motivo",
+        "resumen",
+        "mensajeParaLead",
+        "siguientePaso",
+        "calificadoPorIA",
+        "estado",
+        "consentimiento",
+        "creadoEn"
+      ]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": {
+        "$ref": "#/entities/Lead"
+      },
+      "description": "Colección principal de contactos calificados de Respeten los Rangos."
+    }
+  }
+}

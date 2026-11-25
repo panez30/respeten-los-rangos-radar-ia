@@ -1,0 +1,169 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regla global por defecto: denegar todo acceso no autorizado explícitamente
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'dpaneztorres@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isValidRespuestas(r) {
+      return r is map
+        && r.keys().hasAll(['marca', 'uso', 'presupuesto', 'cuando', 'zona', 'entrega'])
+        && r.keys().hasOnly(['marca', 'uso', 'presupuesto', 'cuando', 'zona', 'entrega'])
+        && r.marca is string && r.marca.size() >= 1 && r.marca.size() <= 60
+        && r.uso is string && r.uso.size() >= 1 && r.uso.size() <= 80
+        && r.presupuesto is string && r.presupuesto.size() >= 1 && r.presupuesto.size() <= 60
+        && r.cuando is string && r.cuando.size() >= 1 && r.cuando.size() <= 60
+        && r.zona is string && r.zona.size() >= 1 && r.zona.size() <= 80
+        && r.entrega is string && r.entrega.size() >= 1 && r.entrega.size() <= 80;
+    }
+
+    function isValidConsentimiento(c) {
+      return c is map
+        && c.keys().hasAll(['aceptado', 'fecha'])
+        && c.keys().hasOnly(['aceptado', 'fecha'])
+        && c.aceptado == true
+        && c.fecha is timestamp;
+    }
+
+    function isValidLeadCreate(data) {
+      return data.keys().hasAll([
+          'nombre',
+          'whatsapp',
+          'respuestas',
+          'comentario',
+          'score',
+          'categoria',
+          'motivo',
+          'resumen',
+          'mensajeParaLead',
+          'siguientePaso',
+          'calificadoPorIA',
+          'estado',
+          'consentimiento',
+          'creadoEn'
+        ])
+        && data.keys().hasOnly([
+          'nombre',
+          'whatsapp',
+          'respuestas',
+          'comentario',
+          'score',
+          'categoria',
+          'motivo',
+          'resumen',
+          'mensajeParaLead',
+          'siguientePaso',
+          'calificadoPorIA',
+          'estado',
+          'consentimiento',
+          'creadoEn',
+          'primerContactoEn',
+          'llegoACita'
+        ])
+        && data.nombre is string && data.nombre.size() >= 2 && data.nombre.size() <= 80
+        && data.whatsapp is string && data.whatsapp.size() >= 8 && data.whatsapp.size() <= 30
+        && isValidRespuestas(data.respuestas)
+        && data.comentario is string && data.comentario.size() <= 300
+        && data.score is int && data.score >= 0 && data.score <= 100
+        && data.categoria in ['caliente', 'tibio', 'frio', 'descalificado']
+        && data.motivo is string && data.motivo.size() >= 1 && data.motivo.size() <= 220
+        && data.resumen is string && data.resumen.size() >= 1 && data.resumen.size() <= 280
+        && data.mensajeParaLead is string && data.mensajeParaLead.size() >= 1 && data.mensajeParaLead.size() <= 380
+        && data.siguientePaso in ['llamar_hoy', 'escribir_whatsapp', 'enviar_informacion', 'no_contactar']
+        && data.calificadoPorIA is bool
+        && data.estado == 'nuevo'
+        && isValidConsentimiento(data.consentimiento)
+        && data.consentimiento.fecha == request.time
+        && data.creadoEn is timestamp
+        && data.creadoEn == request.time
+        && (!('primerContactoEn' in data) || data.primerContactoEn == null)
+        && (!('llegoACita' in data) || data.llegoACita == false);
+    }
+
+    function isValidLeadUpdate(data) {
+      return data.keys().hasAll([
+          'nombre',
+          'whatsapp',
+          'respuestas',
+          'comentario',
+          'score',
+          'categoria',
+          'motivo',
+          'resumen',
+          'mensajeParaLead',
+          'siguientePaso',
+          'calificadoPorIA',
+          'estado',
+          'consentimiento',
+          'creadoEn'
+        ])
+        && data.keys().hasOnly([
+          'nombre',
+          'whatsapp',
+          'respuestas',
+          'comentario',
+          'score',
+          'categoria',
+          'motivo',
+          'resumen',
+          'mensajeParaLead',
+          'siguientePaso',
+          'calificadoPorIA',
+          'estado',
+          'consentimiento',
+          'creadoEn',
+          'primerContactoEn',
+          'llegoACita'
+        ])
+        && data.nombre == existing().nombre
+        && data.whatsapp == existing().whatsapp
+        && data.respuestas == existing().respuestas
+        && data.comentario == existing().comentario
+        && data.score == existing().score
+        && data.categoria == existing().categoria
+        && data.motivo == existing().motivo
+        && data.resumen == existing().resumen
+        && data.mensajeParaLead == existing().mensajeParaLead
+        && data.siguientePaso == existing().siguientePaso
+        && data.calificadoPorIA == existing().calificadoPorIA
+        && data.consentimiento == existing().consentimiento
+        && data.creadoEn == existing().creadoEn
+        && data.estado in ['nuevo', 'contactado', 'cita', 'ganado', 'perdido']
+        && (!('primerContactoEn' in data) || data.primerContactoEn == null || data.primerContactoEn is timestamp)
+        && (!('llegoACita' in data) || data.llegoACita is bool)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['estado', 'primerContactoEn', 'llegoACita']);
+    }
+
+    match /leads/{leadId} {
+      allow get: if isValidId(leadId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isValidId(leadId) && isValidLeadCreate(incoming());
+      allow update: if isValidId(leadId) && isAdmin() && isValidLeadUpdate(incoming());
+      allow delete: if isValidId(leadId) && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Respeten los Rangos",
+  "description": "Cotiza tus zapatillas originales Adidas, Puma y Nike en Villa de Pasco, Perú. Atención rápida por WhatsApp y entrega local coordinada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
